@@ -5,8 +5,10 @@
 - Windows
 - Git
 - Node.js 20+
-- Codex
-- DeepSeek Harness 桌面版
+- Codex Windows 桌面版 **26.1021.3705.0**
+- DeepSeek Harness 桌面版 **0.2.1-rc.3**
+
+以上为本项目完成适配和实测的应用版本（2026-10-27），其他版本尚未验证。
 
 先打开一次 Harness，完成登录并选择模型。
 
