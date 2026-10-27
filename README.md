@@ -21,30 +21,28 @@
 
 ## 安装
 
-目前主要在 Windows 上使用，需要 Node.js 20+、Codex，以及已经安装并完成登录和模型设置的 DeepSeek Harness。
+安装前准备好 Windows、Git、Node.js 20+、Codex 和 DeepSeek Harness。先打开一次 Harness，完成登录和模型设置。
 
-最省事的方式是把下面这段话发给 Codex：
-
-```text
-请读取 https://github.com/m3145284542-dotcom/dsh-codex-mcp/blob/main/INSTALL.md，
-把这个仓库下载到本地并完成安装，尽量自动找到本机 DeepSeek Harness。
-保留我的其他配置；完成后告诉我是否需要重开应用。
-```
-
-安装会配置 MCP、Harness 桌面插件和 skill，自动查找本机 Harness，并保留原有设置。完整步骤见 [INSTALL.md](INSTALL.md)。
-
-<details>
-<summary>也可以自己安装</summary>
-
-在 PowerShell 中执行：
+在 PowerShell 中下载仓库并运行安装脚本：
 
 ```powershell
 git clone https://github.com/m3145284542-dotcom/dsh-codex-mcp.git
 cd dsh-codex-mcp
+node scripts/install.mjs
+```
+
+脚本会查找正在运行或安装在常见目录的 Harness。如果未找到，指定应用路径重新执行：
+
+```powershell
 node scripts/install.mjs --app 'D:\Apps\DeepSeek Harness\DeepSeek Harness.exe'
 ```
 
-把 `--app` 后的路径换成实际安装位置。如果 Harness 正在运行，或安装在常见目录，可以省略 `--app`。加上 `--dry-run` 可以先查看安装位置。
+将示例路径换成实际安装位置。安装完成后，重开 Codex 和 Harness，然后在 Codex 中输入“打开 dsh”确认连接。
+
+完整步骤和卸载方法见 [INSTALL.md](INSTALL.md)。
+
+<details>
+<summary>安装位置与选项</summary>
 
 默认会安装到：
 
@@ -55,11 +53,9 @@ node scripts/install.mjs --app 'D:\Apps\DeepSeek Harness\DeepSeek Harness.exe'
 ~/.dsh/profiles/desktop/cordis.patch.yml  桌面插件条目
 ```
 
-支持 `CODEX_HOME` 和 `DSH_HOME`。安装脚本会备份已有配置。
+加上 `--dry-run` 可以预览安装位置。支持通过 `CODEX_HOME` 和 `DSH_HOME` 指定用户目录，安装脚本会备份并合并已有配置。
 
 </details>
-
-首次安装后，重开 Codex 和 Harness，让它们加载插件。之后说“打开 dsh”就可以直接启动；任务执行时也会按需打开。
 
 ## 模型怎么选
 
