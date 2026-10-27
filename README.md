@@ -86,6 +86,8 @@ node scripts/install.mjs --app 'D:\Apps\DeepSeek Harness\DeepSeek Harness.exe' -
 
 安装脚本将 `--app` 写入 dsh MCP 的环境变量 `DSH_DESKTOP_APP`。任务开始前，MCP 会检查桌面心跳；离线时启动这个已安装程序，等待最多 45 秒，桥接和 UI 就绪后再发送任务。已有连接可用时不会再次启动应用；同一 MCP 进程的并发启动请求共用一次启动。
 
+Windows 上通过本地 WMI 独立启动 Harness，避免它继承 GPT/Codex 的进程组：退出 GPT/Codex 后 Harness 继续运行，关闭 Harness 也不会关闭 GPT/Codex。无需管理员权限；若系统策略禁用本地 WMI，启动会明确报错，可手动打开 Harness 后继续使用桥接，不会退回到会随宿主关闭的启动方式。
+
 不希望自动启动时，在 `~/.codex/config.toml` 的 `[mcp_servers.dsh.env]` 中设置：
 
 ```toml
@@ -116,6 +118,14 @@ node test-client.mjs '不要使用工具，只回复：连接成功' '不要使�
 ```
 
 第一条使用本地模拟 Host，检查安装合并、创建、续聊、忙碌与超时。第二条运行真实桌面任务，会消耗你配置的模型用量。原型阶段无需反复运行完整验证。
+
+Windows 上修改启动逻辑后，可额外运行不消耗模型额度的进程生命周期检查：
+
+```powershell
+npm run test:windows-lifecycle
+```
+
+测试用临时桌面进程验证两个方向的关闭独立性、交互会话、环境变量及带空格/中文/单引号的路径，不会关闭实际 GPT/Codex 或 Harness。
 
 后台 CLI 模式仍保留为显式选项 `DSH_MODE=headless`；它另需 `@deepseek-ai/dsh` CLI 及相应 headless profile 配置，不会自动代替桌面模式，也不保证出现在桌面列表中。
 

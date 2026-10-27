@@ -12,7 +12,8 @@
   "scripts": {
     "setup": "node scripts/install.mjs",
     "test:unit": "node tests/installer.test.mjs && node tests/desktop-plugin.test.mjs",
-    "test": "node test-client.mjs \"Reply with exactly: BRIDGE OK\""
+    "test": "node test-client.mjs \"Reply with exactly: BRIDGE OK\"",
+    "test:windows-lifecycle": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/windows-lifecycle.test.ps1"
   },
   "engines": {
     "node": ">=20"

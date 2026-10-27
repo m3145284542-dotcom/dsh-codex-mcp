@@ -1,6 +1,6 @@
 import { readFile, access } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, isAbsolute } from 'node:path';
+import { join, isAbsolute, dirname } from 'node:path';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -49,9 +49,39 @@ export async function findDesktopApp() {
   throw new Error('DeepSeek Harness executable not found. Re-run the installer with --app <absolute executable path>, or set DSH_DESKTOP_APP.');
 }
 
-async function launchDesktop(app) {
+export async function launchDesktop(app) {
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
+  if (process.platform === 'win32') {
+    // detached/unref do not escape the MCP host's Windows Job Object.
+    // Local WMI creates the GUI independently of the caller's process tree.
+    // https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects
+    const literal = value => "'" + value.replaceAll("'", "''") + "'";
+    const script = `
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$environment = [Environment]::GetEnvironmentVariables('Process')
+$variables = [string[]]@($environment.Keys | Sort-Object | ForEach-Object { "$_=$($environment[$_])" })
+$startup = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{
+  ShowWindow = [uint16]1
+  CreateFlags = [uint32]0x01000400
+  EnvironmentVariables = $variables
+}
+$result = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
+  CommandLine = ${literal('"' + app + '"')}
+  CurrentDirectory = ${literal(dirname(app))}
+  ProcessStartupInformation = $startup
+}
+if ($result.ReturnValue -ne 0) { throw "Independent desktop launch failed (WMI code $($result.ReturnValue))." }
+$result | Select-Object ReturnValue, ProcessId | ConvertTo-Json -Compress
+`;
+    const { stdout } = await runFile('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64'),
+    ], { env, windowsHide: true, timeout: 15000, encoding: 'utf8' });
+    const result = JSON.parse(stdout.replace(/^\uFEFF/, '').trim());
+    if (result.ReturnValue !== 0 || !result.ProcessId) throw new Error('Independent desktop launch returned no process ID.');
+    return result.ProcessId;
+  }
   await new Promise((resolve, reject) => {
     const child = spawn(app, [], { detached: true, stdio: 'ignore', windowsHide: false, env });
     child.once('error', reject);
@@ -76,3 +106,5 @@ export async function ensureDesktop({ timeoutMs = 45000, autoStart = process.env
   })();
   try { return await opening; } finally { opening = undefined; }
 }
+
+
