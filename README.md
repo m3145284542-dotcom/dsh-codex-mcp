@@ -62,6 +62,34 @@ node scripts/install.mjs --app 'D:\Apps\DeepSeek Harness\DeepSeek Harness.exe' -
 
 **首次安装后重开 Codex，并打开/重开 Harness 一次以加载插件。此后 Codex 调用任务时可以自行打开 Harness。** 遇到登录或其他启动对话，需要手动完成；不会代填认证。
 
+## 账号登录与 API Key
+
+桥接沿用 Harness 中选定的提供方和模型。两种认证方式分开配置：
+
+| Harness 提供方 | 认证来源 | 使用方式 |
+| --- | --- | --- |
+| DeepSeek Account（`deepseek-account`） | Harness 登录后管理的账号授权 | 在 Harness 登录账号，选择账号模式 |
+| DeepSeek API Key（`deepseek-official`） | 用户保存的真实 API Key，或启动环境的 `DEEPSEEK_API_KEY` | 在 Harness 的模型设置中填写实际密钥，或配置环境变量 |
+
+平台显示的 **DeepSeek HarnessApp-managed** 凭据由 Harness 管理，应通过账号登录模式使用。不要把 Tracking ID、“由 Harness 管理”或变量名 `DEEPSEEK_API_KEY` 当作密钥填入输入框。安装本桥接不会创建、撤销或切换这些凭据。
+
+当前 Harness 适配器使用 Messages 接口，官方服务地址是：
+
+```text
+https://api.deepseek.com/anthropic
+```
+
+这个地址与 OpenAI 兼容接口的根地址不同；填成 `https://api.deepseek.com` 会导致当前 Messages 请求返回 404。已有账号模式通常沿用默认地址即可。
+
+切换默认提供方后，新建会话使用新设置；已有会话请通过模型选择器单独切换。无需为不同认证方式再创建工作区。
+
+遇到连接问题时：
+
+- **缺少 API Key**：先确认当前选的是账号模式还是 API Key 模式，避免用错认证来源。
+- **API Key 无效**：确认输入框保存的是实际密钥。Harness 本地保存的值优先于环境变量，填错的本地值会遮住环境中的正确值。
+- **账号授权无效或要求登录**：在 Harness 中重新完成账号登录，不要把账号授权 token 复制成普通 API Key。
+- **环境变量已设置但应用未读到**：已运行的进程可能仍保留旧环境；重启相关应用，或在 Harness 的模型设置中保存实际密钥。
+
 ## 使用
 
 在 Codex 里直接说：

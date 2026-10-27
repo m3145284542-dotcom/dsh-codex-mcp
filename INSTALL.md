@@ -23,6 +23,14 @@
 
 安装脚本将运行文件复制到 `<CODEX_HOME>/mcp/dsh-codex-mcp/`，将技能复制到 `<CODEX_HOME>/skills/deepseek-delegation/`，并备份、合并 Codex MCP 与 Harness 插件配置。无需 npm install、npm 全局安装或 npm 发布包。
 
+## 认证与连接排查
+
+保留用户已经选择的模型和认证方式，不要因为发现环境变量就自动改成 API Key 模式。Harness 登录管理的授权走 `deepseek-account`；手工 Key 走 `deepseek-official`。平台上的 HarnessApp-managed 项目无需复制到 Key 输入框。
+
+当前 Harness 的官方 Messages 地址为 `https://api.deepseek.com/anthropic`。连接报 404 时核对这个地址；缺少密钥时先核对 provider 和凭据来源。切勿把字面变量名 `DEEPSEEK_API_KEY` 保存成实际密钥，也不要输出用户的 Key、token 或完整凭据文件。更多说明见 [README：账号登录与 API Key](README.md#账号登录与-api-key)。
+
+安装后复用一个 Codex 工作区，新任务仅新增会话。Windows 的桌面启动与 MCP 宿主进程组独立，关闭两款应用互不联动。检查就绪无需重复搜索已确认的安装路径。
+
 ## 完成后说明
 
 向用户简短报告：实际安装位置、是否成功找到 Harness 应用、是否需要重开 Codex/Harness，以及可用工具 `dsh_open`、`dsh_status`、`dsh_task`、`dsh_resume`。用户可以直接说“把这部分交给 DeepSeek”，也可显式使用 `$deepseek-delegation`。

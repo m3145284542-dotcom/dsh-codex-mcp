@@ -8,3 +8,5 @@ local.json
 .dsh/
 work/
 coverage/
+# Per-machine skill locations must stay local.
+skills/deepseek-delegation/references/local-installation.md
