@@ -1,6 +1,6 @@
 ---
 name: deepseek-delegation
-description: Decide when Codex should delegate to the user's installed DeepSeek Harness desktop MCP. Use proactively for substantial tasks with bounded implementation, batch extraction, long-log analysis, document drafting or a focused second opinion; also use for 交给DeepSeek、分工、省额度、让DeepSeek干. Keep trivial changes, unresolved requirements, tightly coupled integration and final acceptance in Codex.
+description: Decide when Codex should delegate to the user's installed DeepSeek Harness desktop MCP. Use proactively for substantial tasks with bounded implementation, batch extraction, long-log analysis, document drafting or a focused second opinion; also use for 打开dsh、打开DeepSeek Harness、交给DeepSeek、分工、省额度、让DeepSeek干. Keep trivial changes, unresolved requirements, tightly coupled integration and final acceptance in Codex.
 ---
 
 # DeepSeek delegation
@@ -8,6 +8,14 @@ description: Decide when Codex should delegate to the user's installed DeepSeek 
 Use the existing Harness desktop MCP as a worker. Codex owns task selection, interfaces, integration and the final answer. The user's standing preference permits appropriate delegation within the work they authorized; it does not expand permissions or override a request to use a particular provider.
 
 For this user, consider delegation without waiting for them to name DeepSeek on every substantial task. Briefly say what package is being handed off and why, then proceed within the existing authorization. Do not add a confirmation step just for model selection. A request to handle the task in Codex or avoid delegation takes precedence.
+
+## Open dsh and reuse known locations
+
+For “打开 dsh”, “打开 DeepSeek Harness”, or an equivalent request to launch the app, call the available `dsh_open({})` tool directly (currently `mcp__dsh__dsh_open`). A launch-only request does not require delegation or a model prompt. Discover its schema if needed; do not list the current folder, search for an executable, or inspect the adapter README before trying the installed tool.
+
+After the first successful setup/open, retain already confirmed installation or working-directory paths in the skill's local `references/local-installation.md`, with the successful tool and date. The user authorizes maintaining this local skill note for that purpose. Record only paths actually established; opening the app does not reveal its executable path, and a task's working directory is not its app installation directory. Read this note only when a later request needs a path. Reuse the configured bridge and known paths across tasks; repeat discovery only if a needed path is missing, fails, or the user requests a different installation.
+
+Keep machine-specific absolute paths in that local note, outside shared GitHub commits and distributable skill copies. Shared copies retain this procedure so each machine records its own confirmed locations. If executable discovery is necessary, persist the confirmed executable through the installer's existing `--app` / `DSH_DESKTOP_APP` configuration, preserving other settings. A successful `dsh_open` is sufficient confirmation of launch/readiness; do not add a model task just to verify it.
 
 ## Decide before dispatch
 
