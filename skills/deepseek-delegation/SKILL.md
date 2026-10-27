@@ -63,6 +63,7 @@ Only add a confidentiality or external-action restriction when relevant to the w
 
 Discover the available `dsh_task` and `dsh_resume` tools; their current fully qualified names are `mcp__dsh__dsh_task` and `mcp__dsh__dsh_resume`. Use MCP directly rather than typing messages through the UI or running another CLI adapter.
 
+- Keep one shared “Codex 工作区” for bridge-created conversations. Create a fresh session for unrelated work, not another workspace. The bridge persists its selected workspace ID and changes each new session's effective working directory to the supplied `cwd`; retain that directory for follow-ups (or omit `cwd` when resuming). Do not manually create a workspace for every task or remove existing workspaces as part of dispatch.
 - Start unrelated work with `dsh_task({prompt, cwd, timeout_sec})` and an absolute `cwd`.
 - Continue or correct the same work with `dsh_resume({session_id, prompt, cwd, timeout_sec})`, using the returned ID and original directory.
 - Select a timeout appropriate to the package. The current bridge defaults to 600 seconds and accepts up to 3600 seconds; the live tool schema is authoritative.

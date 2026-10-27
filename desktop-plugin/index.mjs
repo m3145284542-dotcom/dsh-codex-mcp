@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join, isAbsolute } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-export const inject = ['sessionController', 'workspaceRegistry', 'agents', 'connection'];
+export const inject = ['sessionController', 'workspaceRegistry', 'agents', 'connection', 'workingDirectory'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const uuid = /^[0-9a-f-]{36}$/i;
 export async function atomicJson(path, value) {
@@ -23,6 +23,21 @@ export async function apply(ctx) {
   let active = null;
   let navigation = {};
   let clientSeenAt = 0;
+  const workspaceFile = join(root, 'workspace.json');
+  let workspaceId;
+  try { workspaceId = JSON.parse(await readFile(workspaceFile, 'utf8')).workspaceId; }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+
+  async function sharedWorkspace(cwd) {
+    let workspace = workspaceId ? ctx.workspaceRegistry.get(workspaceId) : undefined;
+    if (!workspace) {
+      workspace = ctx.workspaceRegistry.list().find(item => item.title === 'Codex 工作区');
+      if (!workspace) workspace = await ctx.workspaceRegistry.create(cwd || process.cwd(), 'Codex 工作区');
+      await atomicJson(workspaceFile, { workspaceId: workspace.id });
+      workspaceId = workspace.id;
+    }
+    return workspace;
+  }
 
   ctx.effect(() => ctx.connection.fetch.register({
     path: '/api/codex-desktop-bridge/navigation',
@@ -61,7 +76,7 @@ export async function apply(ctx) {
     let releaseEvents;
     try {
       if (!active.sessionId) {
-        const workspace = await ctx.workspaceRegistry.create(cwd || process.cwd(), 'Codex 工作区');
+        const workspace = await sharedWorkspace(cwd);
         const created = await ctx.sessionController.create({ workspaceId: workspace.id });
         active.sessionId = created.sessionId;
       }
@@ -69,7 +84,11 @@ export async function apply(ctx) {
       const resolved = await ctx.sessionController.resolveAgent(targetId);
       if (resolved.error) throw resolved.error;
       if (resolved.agent.status !== 'idle') throw new Error('Target session is busy. Wait for its current task to finish.');
-      if (cwd && resolved.agent.session?.header?.cwd && resolved.agent.session.header.cwd.toLowerCase() !== cwd.toLowerCase()) throw new Error('Session cwd differs; resume it with its original cwd.');
+      if (cwd && !sessionId) {
+        await ctx.workingDirectory.set(resolved.agent, cwd, AbortSignal.timeout(Math.max(1, deadline - Date.now())));
+      } else if (cwd && ctx.workingDirectory.get(resolved.agent.session).toLowerCase() !== cwd.toLowerCase()) {
+        throw new Error('Session cwd differs; resume it with its current working directory.');
+      }
       navigation = { requestId, sessionId: targetId };
       await atomicJson(join(outbox, `${requestId}.progress.json`), { sessionId: targetId, state: 'opening' });
       const visibleDeadline = Math.min(deadline, Date.now() + 15000);
@@ -135,3 +154,5 @@ export async function apply(ctx) {
   await heartbeat();
   ctx.effect(() => () => { stopped = true; clearInterval(timer); clearInterval(healthTimer); });
 }
+
+

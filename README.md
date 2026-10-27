@@ -80,7 +80,7 @@ node scripts/install.mjs --app 'D:\Apps\DeepSeek Harness\DeepSeek Harness.exe' -
 | `dsh_task` | 必填 prompt；可传绝对 cwd、session_id、timeout_sec |
 | `dsh_resume` | 用 session_id 和 prompt 继续已有对话，沿用原 cwd |
 
-新任务使用新会话；同一任务纠正和补充沿用原 session_id。任务按顺序执行，不要让多个 worker 同时修改同一批文件。
+新任务使用新会话；同一任务纠正和补充沿用原 session_id。所有新会话复用同一个“Codex 工作区”，首次优先沿用已有同名工作区，选定 ID 保存在 `~/.dsh/codex-desktop-bridge/workspace.json`，重启或重命名后继续复用；工作区被删除时才选择或创建替代项。不同任务的 `cwd` 通过 Harness 的会话级工作目录接口设置，保留共用工作区归属。续聊请传会话当前目录，或省略 `cwd`。任务按顺序执行，不要让多个 worker 同时修改同一批文件。
 
 ## 自动打开
 

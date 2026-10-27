@@ -11,17 +11,40 @@ const { apply } = await import(pathToFileURL(root + '/desktop-plugin/index.mjs')
 const { runDesktop } = await import(pathToFileURL(root + '/desktop-client.mjs'));
 const events = new EventEmitter();
 const disposers = [];
-let route, promptCount=0, created=0, cancelCount=0;
-const agent = {status:'idle',session:{header:{cwd:root}}};
+let route, promptCount=0, created=0, cancelCount=0, workspaceCreates=0;
+const workspaces = [{id:'ws-existing',title:'Codex 工作区',path:root}];
+const sessionAgents = new Map();
+const directories = new WeakMap();
+const otherDirectory = join(process.env.DSH_HOME, 'other-project');
+await mkdir(otherDirectory, {recursive:true});
 const ctx = {
   effect(fn) { const result=fn(); if(typeof result === 'function') disposers.push(result); },
   connection:{fetch:{register(r){route=r;return ()=>{};}}},
   logger:{warn:console.error},
-  workspaceRegistry:{async create(){return {id:'ws-test'};}},
+  workspaceRegistry:{
+    list(){return workspaces;},
+    get(id){return workspaces.find(item=>item.id===id);},
+    async create(path,title){
+      workspaceCreates++;
+      const workspace={id:'ws-'+workspaceCreates,path,title};
+      workspaces.push(workspace);return workspace;
+    }
+  },
+  workingDirectory:{
+    get(session){return directories.get(session) || session.header.cwd;},
+    async set(agent,cwd){directories.set(agent.session,cwd);return cwd;}
+  },
   agents:{},
   sessionController:{
-    async create(){created++;return {sessionId:'session-mock'};},
-    async resolveAgent(){return {agent};},
+    async create({workspaceId}){
+      created++;
+      const workspace=ctx.workspaceRegistry.get(workspaceId);
+      assert.ok(workspace);
+      const sessionId='session-mock-'+created;
+      sessionAgents.set(sessionId,{status:'idle',session:{header:{cwd:workspace.path}},workspaceId});
+      return {sessionId};
+    },
+    async resolveAgent(id){return {agent:sessionAgents.get(id)};},
     async prompt(request){
       promptCount++;
       if(request.content[0].text==='hang') return {accepted:true};
@@ -51,13 +74,43 @@ try {
  await sleep(1700);
  let result=await runDesktop({prompt:'test',cwd:root,timeoutMs:5000});
  assert.equal(result.ok,true);assert.equal(result.text,'VISIBLE OK');assert.equal(created,1);
- result=await runDesktop({prompt:'resume',cwd:root,sessionId:'session-mock',timeoutMs:5000});
- assert.equal(result.ok,true);assert.equal(created,1);assert.equal(promptCount,2);
+ const firstSession=result.sessionId;
+ assert.equal(workspaceCreates,0);assert.equal(workspaces.length,1);
+ result=await runDesktop({prompt:'other project',cwd:otherDirectory,timeoutMs:5000});
+ assert.equal(result.ok,true);assert.notEqual(result.sessionId,firstSession);
+ const otherSession=result.sessionId;
+ assert.equal(created,2);assert.equal(workspaceCreates,0);
+ const otherAgent=sessionAgents.get(otherSession);
+ assert.equal(otherAgent.workspaceId,'ws-existing');
+ assert.equal(otherAgent.session.header.cwd,root);
+ assert.equal(ctx.workingDirectory.get(otherAgent.session),otherDirectory);
+ result=await runDesktop({prompt:'resume',cwd:otherDirectory,sessionId:otherSession,timeoutMs:5000});
+ assert.equal(result.ok,true);assert.equal(created,2);
+ const beforeWrongDirectory=promptCount;
+ result=await runDesktop({prompt:'wrong cwd',cwd:root,sessionId:otherSession,timeoutMs:5000});
+ assert.equal(result.ok,false);assert.match(result.error,/cwd differs/);assert.equal(promptCount,beforeWrongDirectory);
+ const agent=sessionAgents.get(firstSession);
  agent.status='running';
- result=await runDesktop({prompt:'busy',sessionId:'session-mock',timeoutMs:5000});
- assert.equal(result.ok,false);assert.match(result.error,/busy/);assert.equal(promptCount,2);
+ result=await runDesktop({prompt:'busy',sessionId:firstSession,timeoutMs:5000});
+ assert.equal(result.ok,false);assert.match(result.error,/busy/);assert.equal(promptCount,beforeWrongDirectory);
  agent.status='idle';
- result=await runDesktop({prompt:'hang',sessionId:'session-mock',timeoutMs:1000});
+ result=await runDesktop({prompt:'hang',sessionId:firstSession,timeoutMs:1000});
  assert.equal(result.ok,false);assert.match(result.error,/timed out/);assert.equal(cancelCount,1);
- console.log('PASS: desktop navigation admission, task result, resume, busy refusal, timeout cancellation');
+ // Reload with a renamed workspace: the durable ID still selects the same one.
+ for(const dispose of disposers.splice(0).reverse()) await dispose();
+ workspaces[0].title='Renamed Codex';
+ await apply(ctx);await sleep(1700);
+ result=await runDesktop({prompt:'after reload',cwd:otherDirectory,timeoutMs:5000});
+ assert.equal(result.ok,true);assert.equal(workspaceCreates,0);assert.equal(created,3);
+ assert.equal(sessionAgents.get(result.sessionId).workspaceId,'ws-existing');
+ assert.equal(JSON.parse(await readFile(join(process.env.DSH_HOME,'codex-desktop-bridge','workspace.json'),'utf8')).workspaceId,'ws-existing');
+ // If the user removes that workspace, create one replacement and reuse it.
+ workspaces.splice(0);
+ result=await runDesktop({prompt:'replacement',cwd:root,timeoutMs:5000});
+ assert.equal(result.ok,true);assert.equal(workspaceCreates,1);assert.equal(workspaces.length,1);
+ result=await runDesktop({prompt:'reuse replacement',cwd:otherDirectory,timeoutMs:5000});
+ assert.equal(result.ok,true);assert.equal(workspaceCreates,1);assert.equal(created,5);
+ console.log('PASS: shared workspace adoption, new sessions, per-session cwd, reload, replacement, resume, busy refusal, timeout cancellation');
 } finally {clearInterval(timer);for(const dispose of disposers.reverse()) await dispose();}
+
+
