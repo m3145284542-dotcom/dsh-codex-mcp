@@ -1,0 +1,10 @@
+node_modules/
+backups/
+*.bak*
+*.log
+local.json
+.env
+.env.*
+.dsh/
+work/
+coverage/

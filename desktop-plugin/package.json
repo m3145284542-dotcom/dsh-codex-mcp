@@ -1,0 +1,9 @@
+{
+  "name": "dsh-codex-desktop-bridge",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "exports": { ".": "./index.mjs", "./client": "./client.js" },
+  "dsh": { "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-ui-workspace"], "immediately": true } }
+}

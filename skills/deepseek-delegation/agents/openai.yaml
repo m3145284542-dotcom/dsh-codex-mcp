@@ -1,0 +1,6 @@
+interface:
+  display_name: "DeepSeek 桌面任务分工"
+  short_description: "为代码、科研与文档任务选择合适的 DeepSeek 委派范围，并验收结果"
+  default_prompt: "使用 $deepseek-delegation 判断这项任务的分工，将合适的工作交给 DeepSeek Harness 桌面端，并由 Codex 验收。"
+policy:
+  allow_implicit_invocation: true

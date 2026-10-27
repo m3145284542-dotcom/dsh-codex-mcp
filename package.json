@@ -1,0 +1,20 @@
+{
+  "name": "dsh-codex-mcp",
+  "version": "0.3.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Model Context Protocol server that exposes DeepSeek Harness (dsh) agents as MCP tools, so Codex/Claude Code can drive dsh.",
+  "type": "module",
+  "main": "server.mjs",
+  "bin": {
+    "dsh-codex-mcp": "server.mjs"
+  },
+  "scripts": {
+    "setup": "node scripts/install.mjs",
+    "test:unit": "node tests/installer.test.mjs && node tests/desktop-plugin.test.mjs",
+    "test": "node test-client.mjs \"Reply with exactly: BRIDGE OK\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
